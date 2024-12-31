@@ -1,0 +1,72 @@
+scope: postgres
+namespace: /service/
+name: {{ ansible_hostname }}
+
+restapi:
+  listen: {{ ansible_hostname }}:8008
+  connect_address: {{ ansible_hostname }}:8008
+
+etcd:
+  host: 192.168.122.156:2379,192.168.122.225:2379,192.168.122.171:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+
+postgresql:
+  listen: {{ ansible_hostname }}:5432
+  connect_address: {{ ansible_hostname }}:5432
+  data_dir: /var/lib/postgresql/data
+  bin_dir: /usr/pgsql-16/bin
+  config_dir: /etc/postgresql/16/main
+  pgpass: /tmp/pgpass
+  authentication:
+    superuser:
+      username: postgres
+      password: postgres
+    replication:
+      username: replicator
+      password: replicator
+  parameters:
+    max_connections: 100
+    max_locks_per_transaction: 64
+    max_worker_processes: 8
+    wal_level: replica
+    hot_standby: "on"
+    wal_keep_segments: 8
+    max_wal_senders: 5
+    max_replication_slots: 5
+    archive_mode: "on"
+    archive_command: 'test ! -f /var/lib/postgresql/data/archive/%f && cp %p /var/lib/postgresql/data/archive/%f'
+    archive_timeout: 1800s
+    synchronous_commit: "on"
+    synchronous_standby_names: '*'
+    log_destination: 'csvlog'
+    logging_collector: "on"
+    log_directory: '/var/log/postgresql'
+    log_filename: 'postgresql-%a.log'
+    log_file_mode: '0640'
+    log_rotation_age: '1d'
+    log_rotation_size: '100MB'
+    log_min_duration_statement: 500
+    log_checkpoints: "on"
+    log_connections: "on"
+    log_disconnections: "on"
+    log_lock_waits: "on"
+    log_statement: 'ddl'
+    log_temp_files: 0
+    track_io_timing: "on"
+    track_functions: 'all'
+    track_activity_query_size: 2048
+    track_commit_timestamp: "on"
+    track_counts: "on"
+    track_activities: "on"

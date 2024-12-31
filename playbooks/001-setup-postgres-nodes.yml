@@ -1,0 +1,86 @@
+- name: Install PostgreSQL 16 server on all hosts
+  hosts: postgres_nodes
+  become: yes
+  tasks:
+    - name: Install PostgreSQL 16
+      yum:
+        name: postgresql16-server
+        state: present
+
+    - name: Set /etc/hosts file
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+      with_items:
+        - "192.168.122.156 postgres-node-1"
+        - "192.168.122.225 postgres-node-2"
+        - "192.168.122.171 postgres-node-3"
+
+    - name: Install etcd
+      yum:
+        name: etcd
+        state: present
+
+    - name: Configure etcd
+      template:
+        src: etcd.conf.j2
+        dest: /etc/etcd/etcd.conf
+      notify: restart etcd
+
+    - name: Start and enable etcd
+      systemd:
+        name: etcd
+        state: started
+        enabled: yes
+
+    - name: Install Patroni
+      yum:
+        name: patroni
+        state: present
+
+    - name: Configure Patroni
+      template:
+        src: patroni.yml.j2
+        dest: /etc/patroni.yml
+      notify: restart patroni
+
+    - name: Start and enable Patroni
+      systemd:
+        name: patroni
+        state: started
+        enabled: yes
+
+    - name: Ensure SELinux is enforcing
+      command: setenforce 1
+
+    - name: Allow PostgreSQL service in firewall
+      firewalld:
+        service: postgresql
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Allow etcd service in firewall
+      firewalld:
+        service: etcd
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Allow Patroni service in firewall
+      firewalld:
+        service: patroni
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+  handlers:
+    - name: restart etcd
+      systemd:
+        name: etcd
+        state: restarted
+
+    - name: restart patroni
+      systemd:
+        name: patroni
+        state: restarted
