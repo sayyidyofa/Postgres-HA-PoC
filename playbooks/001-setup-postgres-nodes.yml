@@ -50,6 +50,30 @@
         state: started
         enabled: yes
 
+    - name: Ensure SELinux is enforcing
+      command: setenforce 1
+
+    - name: Allow PostgreSQL service in firewall
+      firewalld:
+        service: postgresql
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Allow etcd service in firewall
+      firewalld:
+        service: etcd
+        permanent: yes
+        state: enabled
+        immediate: yes
+
+    - name: Allow Patroni service in firewall
+      firewalld:
+        service: patroni
+        permanent: yes
+        state: enabled
+        immediate: yes
+
   handlers:
     - name: restart etcd
       systemd:
